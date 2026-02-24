@@ -1,239 +1,179 @@
 import streamlit as st
 
-st.set_page_config(page_title="Solicitud TBC")
+st.set_page_config(page_title="Solicitud Micobacterias")
 
-st.title("SOLICITUD DE EXAMENES TUBERCULOSIS")
+st.title("🧪 Solicitud Exámenes Micobacterias")
 
-# -------- FUNCION REFRESCAR --------
-def refrescar():
-    st.session_state.clear()
-    st.rerun()
+# -----------------------------
+# Edad paciente
+# -----------------------------
+edad = st.number_input("Edad del paciente", min_value=0, max_value=120, step=1)
+menor_15 = edad < 15
 
-# -------- EDAD --------
-edad = st.number_input(
-    "EDAD DEL PACIENTE",
-    min_value=0,
-    max_value=120,
-    value=None,
-    placeholder="Ingrese edad"
-)
-
-menor_15 = edad is not None and edad < 15
-
-# -------- MOTIVO --------
+# -----------------------------
+# Motivo estudio
+# -----------------------------
 motivo = st.selectbox(
-    "MOTIVO DEL ESTUDIO",
+    "Motivo del estudio",
     [
-        None,
-        "PESQUISA DE CASO PRESUNTIVO DE TUBERCULOSIS (CPT)",
-        "PERSISTENCIA DE SINTOMAS (CPT CON EXAMEN NEGATIVO)",
-        "SOSPECHA CLINICA (SIN CRITERIO DE CPT)",
-        "SOSPECHA DE MICOBACTERIA NO TUBERCULOSA (MNT)",
-        "CONTROL DE TRATAMIENTO"
-    ],
-    index=0
+        "CPT",
+        "Persistencia de síntomas",
+        "Sospecha clínica sin CPT",
+        "Sospecha MNT",
+        "Control de tratamiento"
+    ]
 )
 
-# -------- ANTECEDENTES --------
-def antecedentes_tratamiento():
-    return st.radio(
-        "ANTECEDENTES DE TRATAMIENTO",
-        [
-            "CASO NUEVO (SIN TRATAMIENTO PREVIO)",
-            "SOSPECHA DE FRACASO DE TRATAMIENTO",
-            "PREVIAMENTE TRATADO RECAIDA",
-            "PREVIAMENTE TRATADO PERDIDA DE SEGUIMIENTO"
-        ],
-        index=None
-    )
-
-# -------- GRUPOS VULNERABLES --------
-def grupos_vulnerables():
-    seleccion = st.multiselect(
-        "GRUPOS VULNERABLES",
-        [
-            "DIABETES",
-            "EXTRANJERO",
-            "INMUNOSUPRESION (ESPECIFICAR)",
-            "MAYOR DE 65 AÑOS",
-            "PERSONAL DE SALUD",
-            "PERSONA PRIVADA DE LIBERTAD",
-            "PUEBLO INDIGENA",
-            "SITUACION DE CALLE",
-            "TRABAJADOR EXPUESTO A SILICE",
-            "OTRAS POBLACIONES CERRADAS (ESPECIFICAR)",
-            "OTROS GRUPOS (ESPECIFICAR)",
-            "ALCOHOL/DROGAS",
-            "PV VIH",
-            "CONTACTO TBC SENSIBLE",
-            "CONTACTO TBC RESISTENTE",
-            "MENOR DE 15 AÑOS"
-        ]
-    )
-
-    if "INMUNOSUPRESION (ESPECIFICAR)" in seleccion:
-        st.text_input("ESPECIFICAR INMUNOSUPRESION")
-
-    if "OTRAS POBLACIONES CERRADAS (ESPECIFICAR)" in seleccion:
-        st.text_input("ESPECIFICAR POBLACION CERRADA")
-
-    if "OTROS GRUPOS (ESPECIFICAR)" in seleccion:
-        st.text_input("ESPECIFICAR OTRO GRUPO")
-
-    return seleccion
-
-# -------- SINTOMAS --------
-def sintomas():
-    st.multiselect(
-        "SINTOMAS",
-        ["TOS", "FIEBRE", "BAJA DE PESO", "SUDORACION NOCTURNA", "HEMOPTISIS"]
-    )
-
-# -------- LOGICA --------
 examenes = []
 
-if motivo:
+# -----------------------------
+# FUNCIONES APOYO
+# -----------------------------
+def antecedentes_tratamiento():
+    return st.radio(
+        "Antecedentes de tratamiento",
+        [
+            "Caso nuevo",
+            "Fracaso tratamiento",
+            "Recaída",
+            "Pérdida seguimiento"
+        ]
+    )
 
-    # ======================================================
-    # CPT
-    # ======================================================
-    if motivo == "PESQUISA DE CASO PRESUNTIVO DE TUBERCULOSIS (CPT)":
+def sintomas():
+    return st.multiselect(
+        "Síntomas",
+        ["Tos", "Fiebre", "Baja peso", "Sudoración nocturna", "Hemoptisis"]
+    )
 
-        antecedentes_tratamiento()
+def grupos_vulnerables():
+    return st.multiselect(
+        "Grupos vulnerables",
+        [
+            "Diabetes",
+            "Extranjero",
+            "Inmunosupresión",
+            "Mayor 65",
+            "Personal salud",
+            "Privado libertad",
+            "Pueblo indígena",
+            "Situación calle",
+            "Silicosis",
+            "Alcohol/Drogas",
+            "PV VIH",
+            "Contacto TBC sensible",
+            "Contacto TBC resistente"
+        ]
+    )
 
-        muestra = st.selectbox(
-            "TIPO DE MUESTRA",
-            [
-                None,
-                "ESPUTO",
-                "TEJIDO OSEO",
-                "TEJIDO PLEURAL",
-                "DEPOSICION",
-                "CONTENIDO GASTRICO",
-                "LAVADO BROCO ALVEOLAR",
-                "LIQUIDO CEFALORRAQUIDEO",
-                "LIQUIDO PLEURAL",
-                "OTROS LIQUIDOS TEJIDOS O SANGRE (ESPECIFICAR)",
-                "TEJIDO GANGLIONAR",
-                "ASPIRADO BRONQUIAL",
-                "ORINA"
-            ],
-            index=0
-        )
+# -----------------------------
+# CPT
+# -----------------------------
+if motivo == "CPT":
 
-        if muestra == "ESPUTO":
+    antecedentes_tratamiento()
 
-            st.radio("ESPECIFICAR 1 O 2 MUESTRAS", ["1 MUESTRA", "2 MUESTRAS"], index=None)
+    muestra = st.selectbox(
+        "Tipo muestra",
+        [
+            "Esputo",
+            "Tejido óseo",
+            "Tejido pleural",
+            "Deposición",
+            "Contenido gástrico",
+            "Lavado broncoalveolar",
+            "LCR",
+            "Líquido pleural",
+            "Tejido ganglionar",
+            "Aspirado bronquial",
+            "Orina",
+            "Otros líquidos/tejidos/sangre"
+        ]
+    )
 
-            grupos = grupos_vulnerables()
-            sintomas()
+    if muestra == "Esputo":
 
-            examenes.append("PCR MYCOBACTERIUM TUBERCULOSIS - MTB/RIF")
-
-            if (
-                "PV VIH" in grupos
-                or "CONTACTO TBC SENSIBLE" in grupos
-                or "CONTACTO TBC RESISTENTE" in grupos
-                or menor_15
-            ):
-                examenes.append("CULTIVO KOCH")
-
-        elif muestra in ["TEJIDO OSEO", "TEJIDO PLEURAL", "DEPOSICION"]:
-            examenes.append("PCR MYCOBACTERIUM TUBERCULOSIS - MTB/RIF")
-
-        elif muestra:
-
-            if muestra == "ORINA":
-                st.radio(
-                    "ESPECIFICAR SI 1RA, 2DA O 3RA MUESTRA",
-                    ["1RA MUESTRA", "2DA MUESTRA", "3RA MUESTRA"],
-                    index=None
-                )
-
-            if muestra == "OTROS LIQUIDOS TEJIDOS O SANGRE (ESPECIFICAR)":
-                st.text_input("ESPECIFICAR")
-
-            examenes = [
-                "PCR MYCOBACTERIUM TUBERCULOSIS - MTB/RIF",
-                "CULTIVO KOCH"
-            ]
-
-    # ======================================================
-    # PERSISTENCIA SINTOMAS
-    # ======================================================
-    elif motivo == "PERSISTENCIA DE SINTOMAS (CPT CON EXAMEN NEGATIVO)":
-
-        st.info("TIPO DE MUESTRA: ESPUTO")
-
-        st.radio("ESPECIFICAR 1 O 2 MUESTRAS", ["1 MUESTRA", "2 MUESTRAS"], index=None)
-
-        antecedentes_tratamiento()
+        st.radio("Número muestras", ["1", "2"])
+        grupos = grupos_vulnerables()
         sintomas()
 
-        examenes = [
-            "PCR MYCOBACTERIUM TUBERCULOSIS - MTB/RIF",
-            "CULTIVO KOCH"
-        ]
+        examenes.append("PCR MTB/RIF")
 
-    # ======================================================
-    # SOSPECHA CLINICA
-    # ======================================================
-    elif motivo == "SOSPECHA CLINICA (SIN CRITERIO DE CPT)":
+        if (
+            "PV VIH" in grupos or
+            "Contacto TBC sensible" in grupos or
+            "Contacto TBC resistente" in grupos or
+            menor_15
+        ):
+            examenes.append("Cultivo Koch")
 
-        st.info("TIPO DE MUESTRA: ESPUTO")
+    elif muestra in ["Tejido óseo", "Tejido pleural", "Deposición"]:
+        examenes.append("PCR MTB/RIF")
 
-        st.radio("ESPECIFICAR 1 O 2 MUESTRAS", ["1 MUESTRA", "2 MUESTRAS"], index=None)
+    else:
 
-        antecedentes_tratamiento()
+        if muestra == "Orina":
+            st.radio("Número muestra orina", ["1ra", "2da", "3ra"])
 
-        examenes = [
-            "PCR MYCOBACTERIUM TUBERCULOSIS - MTB/RIF",
-            "CULTIVO KOCH"
-        ]
+        if muestra == "Otros líquidos/tejidos/sangre":
+            st.text_input("Especificar tipo muestra")
 
-    # ======================================================
-    # SOSPECHA MNT
-    # ======================================================
-    elif motivo == "SOSPECHA DE MICOBACTERIA NO TUBERCULOSA (MNT)":
+        examenes.append("PCR MTB/RIF")
+        examenes.append("Cultivo Koch")
 
-        st.info("TIPO DE MUESTRA: ORINA")
+# -----------------------------
+# Persistencia síntomas
+# -----------------------------
+elif motivo == "Persistencia de síntomas":
 
-        antecedentes_tratamiento()
-        grupos_vulnerables()
-        sintomas()
+    st.radio("Número muestras esputo", ["1", "2"])
+    antecedentes_tratamiento()
+    sintomas()
 
-        examenes = ["PCR", "CULTIVO"]
+    examenes = ["PCR MTB/RIF", "Cultivo Koch"]
 
-    # ======================================================
-    # CONTROL TRATAMIENTO
-    # ======================================================
-    elif motivo == "CONTROL DE TRATAMIENTO":
+# -----------------------------
+# Sospecha clínica sin CPT
+# -----------------------------
+elif motivo == "Sospecha clínica sin CPT":
 
-        muestra = st.selectbox(
-            "TIPO DE MUESTRA",
-            [None, "ESPUTO", "ORINA"],
-            index=0
-        )
+    st.radio("Número muestras esputo", ["1", "2"])
+    antecedentes_tratamiento()
 
-        if muestra == "ESPUTO":
+    examenes = ["PCR MTB/RIF", "Cultivo Koch"]
 
-            st.selectbox(
-                "MES DE TRATAMIENTO",
-                [None] + list(range(1, 11)),
-                index=0
-            )
+# -----------------------------
+# Sospecha MNT
+# -----------------------------
+elif motivo == "Sospecha MNT":
 
-            examenes = ["BACILOSCOPIA", "CULTIVO KOCH"]
+    muestra = st.selectbox("Tipo muestra", ["Orina"])
 
-        elif muestra == "ORINA":
-            examenes = ["CULTIVO KOCH"]
+    antecedentes_tratamiento()
+    grupos_vulnerables()
+    sintomas()
 
-# -------- RESULTADO --------
+    examenes = ["PCR", "Cultivo"]
+
+# -----------------------------
+# Control tratamiento
+# -----------------------------
+elif motivo == "Control de tratamiento":
+
+    muestra = st.selectbox("Tipo muestra", ["Esputo", "Orina"])
+
+    if muestra == "Esputo":
+        st.selectbox("Mes tratamiento", list(range(1, 11)))
+        examenes = ["Baciloscopía", "Cultivo"]
+
+    else:
+        examenes = ["Cultivo"]
+
+# -----------------------------
+# RESULTADO FINAL
+# -----------------------------
+st.subheader("Exámenes a realizar")
+
 if examenes:
-    st.subheader("EXAMENES A REALIZAR")
-    for e in set(examenes):
-        st.write("✔", e)
-
-# -------- BOTON REFRESCAR --------
-st.divider()
-st.button("REFRESCAR FORMULARIO", on_click=refrescar)
+    for ex in set(examenes):
+        st.write("✔", ex)
