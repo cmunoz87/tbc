@@ -10,25 +10,12 @@ def reset_app():
         del st.session_state[k]
     st.rerun()
 
-def has_especificar(opcion: str) -> bool:
-    if not opcion:
-        return False
-    u = opcion.upper()
-    return "(ESPECIFICAR)" in u or "OTRAS MUESTRAS" in u
-
 def select_with_placeholder(label: str, options: list[str], key: str):
     opts = ["-- Seleccione --"] + options
     return st.selectbox(label, opts, index=0, key=key)
 
-def text_required_if(condition: bool, label: str, key: str) -> tuple[str, bool]:
-    """Devuelve (texto, ok). Si condition=True, el texto es obligatorio."""
-    txt = st.text_input(label, key=key)
-    if condition:
-        return txt, bool(txt.strip())
-    return txt, True
-
 # ----------------------------
-# Estado inicial para resultados
+# Estado para resultados
 # ----------------------------
 if "show_results" not in st.session_state:
     st.session_state["show_results"] = False
@@ -124,7 +111,6 @@ grupo_vulnerable = []
 sintomas = []
 mes_tratamiento = None
 
-# Validación (campos obligatorios por escenario)
 is_complete = False
 validation_errors = []
 
@@ -159,16 +145,21 @@ elif escenario == "Pesquisa de Caso Presuntivo de Tuberculosis (CPT)":
     st.subheader("Grupo vulnerable (puede seleccionar más de 1)")
     grupo_vulnerable = st.multiselect("Seleccione", grupo_vulnerable_opts, default=[], key="gv_cpt")
 
-    # Textos obligatorios si selecciona opciones con ESPECIFICAR
-    ok_all = True
-    _, ok = text_required_if("Inmunosupresión (ESPECIFICAR)" in grupo_vulnerable, "Especificar inmunosupresión", "esp_inmuno")
-    ok_all = ok_all and ok
-    _, ok = text_required_if("Otras poblaciones cerradas (ESPECIFICAR)" in grupo_vulnerable, "Especificar otras poblaciones cerradas", "esp_poblaciones")
-    ok_all = ok_all and ok
-    _, ok = text_required_if("Otros grupos (ESPECIFICAR)" in grupo_vulnerable, "Especificar otros grupos", "esp_otros_grupos")
-    ok_all = ok_all and ok
-    if not ok_all:
-        validation_errors.append("Debe completar todos los campos 'Especificar' seleccionados en Grupo vulnerable.")
+    # Mostrar "Especificar" SOLO si se selecciona
+    if "Inmunosupresión (ESPECIFICAR)" in grupo_vulnerable:
+        txt_inmuno = st.text_input("Especificar inmunosupresión", key="esp_inmuno")
+        if not txt_inmuno.strip():
+            validation_errors.append("Debe especificar inmunosupresión.")
+
+    if "Otras poblaciones cerradas (ESPECIFICAR)" in grupo_vulnerable:
+        txt_pob = st.text_input("Especificar otras poblaciones cerradas", key="esp_poblaciones")
+        if not txt_pob.strip():
+            validation_errors.append("Debe especificar otras poblaciones cerradas.")
+
+    if "Otros grupos (ESPECIFICAR)" in grupo_vulnerable:
+        txt_otros = st.text_input("Especificar otros grupos", key="esp_otros_grupos")
+        if not txt_otros.strip():
+            validation_errors.append("Debe especificar otros grupos.")
 
     st.subheader("Síntomas (puede seleccionar más de 1)")
     sintomas = st.multiselect("Seleccione", sintomas_opts, default=[], key="sint_cpt")
@@ -180,10 +171,10 @@ elif escenario == "Persistencia de síntomas (CPT con examen negativo)":
     if muestra == "-- Seleccione --":
         validation_errors.append("Debe seleccionar el tipo de muestra.")
 
-    # Otras muestras -> texto obligatorio
-    _, ok = text_required_if(has_especificar(muestra), "Especificar muestra", "esp_muestra_persist")
-    if not ok:
-        validation_errors.append("Debe especificar la muestra seleccionada.")
+    if muestra == "Otras muestras (ESPECIFICAR)":
+        txt_m = st.text_input("Especificar muestra", key="esp_muestra_persist")
+        if not txt_m.strip():
+            validation_errors.append("Debe especificar la muestra.")
 
     antecedentes = select_with_placeholder(
         "Antecedentes de tratamiento (obligatorio, 1 sola)",
@@ -200,9 +191,10 @@ elif escenario == "Sospecha clínica (sin criterio de CPT)":
     if muestra == "-- Seleccione --":
         validation_errors.append("Debe seleccionar el tipo de muestra.")
 
-    _, ok = text_required_if(has_especificar(muestra), "Especificar muestra", "esp_muestra_sospecha")
-    if not ok:
-        validation_errors.append("Debe especificar la muestra seleccionada.")
+    if muestra == "Otras muestras (ESPECIFICAR)":
+        txt_m = st.text_input("Especificar muestra", key="esp_muestra_sospecha")
+        if not txt_m.strip():
+            validation_errors.append("Debe especificar la muestra.")
 
     antecedentes = select_with_placeholder(
         "Antecedentes de tratamiento (obligatorio, 1 sola)",
@@ -219,9 +211,10 @@ elif escenario == "Sospecha de Micobacteria No Tuberculosa (MNT)":
     if muestra == "-- Seleccione --":
         validation_errors.append("Debe seleccionar el tipo de muestra.")
 
-    _, ok = text_required_if(has_especificar(muestra), "Especificar muestra", "esp_muestra_mnt")
-    if not ok:
-        validation_errors.append("Debe especificar la muestra seleccionada.")
+    if muestra == "Otras muestras (ESPECIFICAR)":
+        txt_m = st.text_input("Especificar muestra", key="esp_muestra_mnt")
+        if not txt_m.strip():
+            validation_errors.append("Debe especificar la muestra.")
 
     antecedentes = select_with_placeholder(
         "Antecedentes de tratamiento (obligatorio, 1 sola)",
@@ -234,15 +227,20 @@ elif escenario == "Sospecha de Micobacteria No Tuberculosa (MNT)":
     st.subheader("Grupo vulnerable (puede seleccionar más de 1)")
     grupo_vulnerable = st.multiselect("Seleccione", grupo_vulnerable_opts, default=[], key="gv_mnt")
 
-    ok_all = True
-    _, ok = text_required_if("Inmunosupresión (ESPECIFICAR)" in grupo_vulnerable, "Especificar inmunosupresión", "esp_inmuno_mnt")
-    ok_all = ok_all and ok
-    _, ok = text_required_if("Otras poblaciones cerradas (ESPECIFICAR)" in grupo_vulnerable, "Especificar otras poblaciones cerradas", "esp_poblaciones_mnt")
-    ok_all = ok_all and ok
-    _, ok = text_required_if("Otros grupos (ESPECIFICAR)" in grupo_vulnerable, "Especificar otros grupos", "esp_otros_grupos_mnt")
-    ok_all = ok_all and ok
-    if not ok_all:
-        validation_errors.append("Debe completar todos los campos 'Especificar' seleccionados en Grupo vulnerable.")
+    if "Inmunosupresión (ESPECIFICAR)" in grupo_vulnerable:
+        txt_inmuno = st.text_input("Especificar inmunosupresión", key="esp_inmuno_mnt")
+        if not txt_inmuno.strip():
+            validation_errors.append("Debe especificar inmunosupresión.")
+
+    if "Otras poblaciones cerradas (ESPECIFICAR)" in grupo_vulnerable:
+        txt_pob = st.text_input("Especificar otras poblaciones cerradas", key="esp_poblaciones_mnt")
+        if not txt_pob.strip():
+            validation_errors.append("Debe especificar otras poblaciones cerradas.")
+
+    if "Otros grupos (ESPECIFICAR)" in grupo_vulnerable:
+        txt_otros = st.text_input("Especificar otros grupos", key="esp_otros_grupos_mnt")
+        if not txt_otros.strip():
+            validation_errors.append("Debe especificar otros grupos.")
 
     st.subheader("Síntomas (puede seleccionar más de 1)")
     sintomas = st.multiselect("Seleccione", sintomas_opts, default=[], key="sint_mnt")
@@ -259,7 +257,6 @@ elif escenario == "Control de tratamiento":
     if mes_tratamiento == "-- Seleccione --":
         validation_errors.append("Debe seleccionar el mes de tratamiento.")
 
-    # Regla: Orina solo mes 4
     if muestra == "Orina" and mes_tratamiento not in ("-- Seleccione --", "4"):
         validation_errors.append("Para ORINA, corresponde solo el mes 4.")
 
@@ -276,12 +273,10 @@ if calcular:
     st.session_state["examenes_out"] = []
 
     if not is_complete:
-        if validation_errors:
-            st.error("Faltan campos obligatorios por completar.")
-        else:
-            st.error("Complete los campos obligatorios para calcular los exámenes.")
+        st.error("Faltan campos obligatorios por completar.")
+        for msg in validation_errors:
+            st.write(f"- {msg}")
     else:
-        # Calcular exámenes según reglas
         examenes = []
 
         if escenario == "Pesquisa de Caso Presuntivo de Tuberculosis (CPT)":
@@ -302,17 +297,14 @@ if calcular:
             "Sospecha clínica (sin criterio de CPT)",
             "Sospecha de Micobacteria No Tuberculosa (MNT)",
         ]:
-            # Por defecto: PCR + Cultivo
             examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF", "Cultivo Koch"]
-
-            # Excepción: tejido óseo / tejido pulmonar / deposición -> solo PCR
             if muestra in ["Tejido óseo", "Tejido pulmonar", "Deposición"]:
                 examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF"]
 
         elif escenario == "Control de tratamiento":
             if muestra == "Esputo":
                 examenes = ["Baciloscopía", "Cultivo Koch"]
-            else:  # Orina (mes 4 validado)
+            else:
                 examenes = ["Cultivo Koch"]
 
         st.session_state["examenes_out"] = examenes
@@ -328,7 +320,6 @@ if st.session_state["show_results"]:
 
 st.divider()
 
-# Botón de "refresh" (nuevo caso)
 if st.button("Nuevo caso (borrar y simular otro)"):
     reset_app()
 
