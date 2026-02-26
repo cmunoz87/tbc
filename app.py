@@ -18,7 +18,17 @@ def requiere_especificar(opcion: str) -> bool:
 # ----------------------------
 st.title("Simulación de Solicitud de Investigación Bacteriológica de Tuberculosis")
 
-st.write("Seleccione un escenario clínico y complete los campos requeridos. Los exámenes se agregan según la lógica definida.")
+st.subheader("Datos del paciente")
+edad = st.number_input(
+    "Edad del paciente (años)",
+    min_value=0,
+    max_value=120,
+    value=0,
+    step=1,
+    key="edad_paciente"
+)
+
+st.divider()
 
 escenarios = [
     "1) Pesquisa de Caso Presuntivo de Tuberculosis (CPT)",
@@ -31,12 +41,9 @@ escenario = st.selectbox("Escenario clínico (obligatorio)", escenarios, key="es
 
 st.divider()
 
-# Campos comunes en varios escenarios
-edad = None
-antecedentes = None
-grupo_vulnerable = []
-sintomas = []
-
+# ----------------------------
+# Catálogos
+# ----------------------------
 antecedentes_opts = [
     "Caso nuevo (sin tratamiento previo)",
     "Sospecha de fracaso de tratamiento",
@@ -69,7 +76,6 @@ grupo_vulnerable_opts = [
     "Contacto TB-resistente",
 ]
 
-# Listas de muestras
 muestras_cpt = ["Esputo", "Aspirado endotraqueal", "Secreción bronquial"]
 
 muestras_amplias = [
@@ -93,15 +99,12 @@ muestras_amplias = [
 examenes = []
 observaciones = []
 muestra = None
+antecedentes = None
+grupo_vulnerable = []
+sintomas = []
 
 if escenario.startswith("1)"):
-    col1, col2 = st.columns([1, 1])
-
-    with col1:
-        muestra = st.radio("Tipo de muestra (1 sola)", muestras_cpt, key="muestra_cpt")
-
-    with col2:
-        edad = st.number_input("Edad (años)", min_value=0, max_value=120, value=0, step=1, key="edad_cpt")
+    muestra = st.radio("Tipo de muestra (1 sola)", muestras_cpt, key="muestra_cpt")
 
     if muestra == "Esputo":
         st.radio("Cantidad de muestras de esputo", ["1 muestra", "2 muestras"], key="n_esputo")
@@ -123,11 +126,12 @@ if escenario.startswith("1)"):
     sintomas = st.multiselect("Seleccione", sintomas_opts, default=[], key="sint_cpt")
 
     # Exámenes
-    examenes.append("PCR Mycobacterium tuberculosis – MTB/RIF")
+    examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF"]
 
     # Regla de cultivo en CPT
     gatilla_cultivo = False
-    if edad is not None and int(edad) < 15:
+
+    if int(edad) < 15:
         gatilla_cultivo = True
         observaciones.append("Se agrega Cultivo (menor de 15 años).")
 
@@ -208,34 +212,17 @@ elif escenario.startswith("5)"):
         examenes = ["Cultivo Koch"]
 
 # ----------------------------
-# Resumen
+# SALIDA (solo exámenes)
 # ----------------------------
 st.divider()
-st.subheader("Resumen del caso")
-
-st.write(f"Escenario: {escenario}")
-if muestra is not None:
-    st.write(f"Muestra: {muestra}")
-
-if escenario.startswith("1)") and "n_esputo" in st.session_state:
-    st.write(f"Cantidad de esputo: {st.session_state.get('n_esputo')}")
-
-if escenario.startswith("5)"):
-    st.write(f"Mes de tratamiento: {st.session_state.get('mes_ctrl')}")
-
-if antecedentes is not None:
-    st.write(f"Antecedentes de tratamiento: {antecedentes}")
-
-if escenario.startswith("1)") or escenario.startswith("4)"):
-    st.write(f"Grupo vulnerable: {', '.join(grupo_vulnerable) if grupo_vulnerable else 'Ninguno'}")
-    st.write(f"Síntomas: {', '.join(sintomas) if sintomas else 'Ninguno'}")
-
-st.markdown("**Exámenes a realizar:**")
+st.subheader("Exámenes a realizar")
 for e in examenes:
     st.write(f"- {e}")
 
+# Observaciones (si aplican)
 if observaciones:
-    st.markdown("**Observaciones / reglas aplicadas:**")
+    st.divider()
+    st.subheader("Observaciones / reglas aplicadas")
     for o in observaciones:
         st.write(f"- {o}")
 
