@@ -145,7 +145,6 @@ elif escenario == "Pesquisa de Caso Presuntivo de Tuberculosis (CPT)":
     st.subheader("Grupo vulnerable (puede seleccionar más de 1)")
     grupo_vulnerable = st.multiselect("Seleccione", grupo_vulnerable_opts, default=[], key="gv_cpt")
 
-    # Mostrar "Especificar" SOLO si se selecciona
     if "Inmunosupresión (ESPECIFICAR)" in grupo_vulnerable:
         txt_inmuno = st.text_input("Especificar inmunosupresión", key="esp_inmuno")
         if not txt_inmuno.strip():
@@ -252,13 +251,14 @@ elif escenario == "Control de tratamiento":
     if muestra == "-- Seleccione --":
         validation_errors.append("Debe seleccionar el tipo de muestra.")
 
-    mes_opts = [str(i) for i in range(1, 11)] + ["6 meses post alta"]
-    mes_tratamiento = select_with_placeholder("Mes de tratamiento (obligatorio)", mes_opts, key="mes_ctrl")
-    if mes_tratamiento == "-- Seleccione --":
-        validation_errors.append("Debe seleccionar el mes de tratamiento.")
-
-    if muestra == "Orina" and mes_tratamiento not in ("-- Seleccione --", "4"):
-        validation_errors.append("Para ORINA, corresponde solo el mes 4.")
+    # Regla: si es ORINA, NO se elige mes
+    if muestra == "Esputo":
+        mes_opts = [str(i) for i in range(1, 11)] + ["6 meses post alta"]
+        mes_tratamiento = select_with_placeholder("Mes de tratamiento (obligatorio)", mes_opts, key="mes_ctrl")
+        if mes_tratamiento == "-- Seleccione --":
+            validation_errors.append("Debe seleccionar el mes de tratamiento.")
+    elif muestra == "Orina":
+        st.info("Orina: 1 muestra. No requiere seleccionar mes (se asume mes 4).")
 
     is_complete = len(validation_errors) == 0
 
@@ -304,7 +304,7 @@ if calcular:
         elif escenario == "Control de tratamiento":
             if muestra == "Esputo":
                 examenes = ["Baciloscopía", "Cultivo Koch"]
-            else:
+            else:  # Orina
                 examenes = ["Cultivo Koch"]
 
         st.session_state["examenes_out"] = examenes
