@@ -258,7 +258,7 @@ elif escenario == "Control de tratamiento":
         if mes_tratamiento == "-- Seleccione --":
             validation_errors.append("Debe seleccionar el mes de tratamiento.")
     elif muestra == "Orina":
-        st.info("Orina: 1 muestra. No requiere seleccionar mes (se asume mes 4).")
+        st.info("Orina: 1 muestra. Al 4to mes 4).")
 
     is_complete = len(validation_errors) == 0
 
