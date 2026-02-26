@@ -1,179 +1,249 @@
 import streamlit as st
 
-st.set_page_config(page_title="Solicitud Micobacterias")
+st.set_page_config(page_title="Simulación TBC", layout="centered")
 
-st.title("🧪 Solicitud Exámenes Micobacterias")
+# ----------------------------
+# Utilidades
+# ----------------------------
+def reset_app():
+    for k in list(st.session_state.keys()):
+        del st.session_state[k]
+    st.rerun()
 
-# -----------------------------
-# Edad paciente
-# -----------------------------
-edad = st.number_input("Edad del paciente", min_value=0, max_value=120, step=1)
-menor_15 = edad < 15
+def requiere_especificar(opcion: str) -> bool:
+    return "(ESPECIFICAR)" in opcion.upper() or "OTRAS MUESTRAS" in opcion.upper()
 
-# -----------------------------
-# Motivo estudio
-# -----------------------------
-motivo = st.selectbox(
-    "Motivo del estudio",
-    [
-        "CPT",
-        "Persistencia de síntomas",
-        "Sospecha clínica sin CPT",
-        "Sospecha MNT",
-        "Control de tratamiento"
-    ]
-)
+# ----------------------------
+# UI
+# ----------------------------
+st.title("Simulación de Solicitud de Investigación Bacteriológica de Tuberculosis")
 
+st.write("Seleccione un escenario clínico y complete los campos requeridos. Los exámenes se agregan según la lógica definida.")
+
+escenarios = [
+    "1) Pesquisa de Caso Presuntivo de Tuberculosis (CPT)",
+    "2) Persistencia de síntomas (CPT con examen negativo)",
+    "3) Sospecha clínica (sin criterio de CPT)",
+    "4) Sospecha de Micobacteria No Tuberculosa (MNT)",
+    "5) Control de tratamiento",
+]
+escenario = st.selectbox("Escenario clínico (obligatorio)", escenarios, key="escenario")
+
+st.divider()
+
+# Campos comunes en varios escenarios
+edad = None
+antecedentes = None
+grupo_vulnerable = []
+sintomas = []
+
+antecedentes_opts = [
+    "Caso nuevo (sin tratamiento previo)",
+    "Sospecha de fracaso de tratamiento",
+    "Previamente tratado – recaída",
+    "Previamente tratado – pérdida de seguimiento",
+]
+
+sintomas_opts = [
+    "Baja de peso",
+    "Sudoración nocturna",
+    "Esputo con sangre",
+    "Fiebre",
+]
+
+grupo_vulnerable_opts = [
+    "Diabetes",
+    "Extranjero",
+    "Inmunosupresión (ESPECIFICAR)",
+    "Mayor de 65 años",
+    "Personal de salud",
+    "Persona privada de libertad",
+    "Pueblo indígena",
+    "Situación de calle",
+    "Trabajador expuesto a sílice",
+    "Otras poblaciones cerradas (ESPECIFICAR)",
+    "Otros grupos (ESPECIFICAR)",
+    "Alcohol/drogas",
+    "PV VIH",
+    "Contacto TB-sensible",
+    "Contacto TB-resistente",
+]
+
+# Listas de muestras
+muestras_cpt = ["Esputo", "Aspirado endotraqueal", "Secreción bronquial"]
+
+muestras_amplias = [
+    "Contenido gástrico",
+    "Lavado broncoalveolar",
+    "Líquido cefalorraquídeo",
+    "Líquido pleural",
+    "Tejido ganglionar",
+    "Aspirado bronquial",
+    "Otras muestras (ESPECIFICAR)",
+    "Orina",
+    "Tejido óseo",
+    "Tejido pleural",
+    "Tejido pulmonar",
+    "Deposición",
+]
+
+# ----------------------------
+# Lógica por escenario
+# ----------------------------
 examenes = []
+observaciones = []
+muestra = None
 
-# -----------------------------
-# FUNCIONES APOYO
-# -----------------------------
-def antecedentes_tratamiento():
-    return st.radio(
-        "Antecedentes de tratamiento",
-        [
-            "Caso nuevo",
-            "Fracaso tratamiento",
-            "Recaída",
-            "Pérdida seguimiento"
-        ]
-    )
+if escenario.startswith("1)"):
+    col1, col2 = st.columns([1, 1])
 
-def sintomas():
-    return st.multiselect(
-        "Síntomas",
-        ["Tos", "Fiebre", "Baja peso", "Sudoración nocturna", "Hemoptisis"]
-    )
+    with col1:
+        muestra = st.radio("Tipo de muestra (1 sola)", muestras_cpt, key="muestra_cpt")
 
-def grupos_vulnerables():
-    return st.multiselect(
-        "Grupos vulnerables",
-        [
-            "Diabetes",
-            "Extranjero",
-            "Inmunosupresión",
-            "Mayor 65",
-            "Personal salud",
-            "Privado libertad",
-            "Pueblo indígena",
-            "Situación calle",
-            "Silicosis",
-            "Alcohol/Drogas",
-            "PV VIH",
-            "Contacto TBC sensible",
-            "Contacto TBC resistente"
-        ]
-    )
-
-# -----------------------------
-# CPT
-# -----------------------------
-if motivo == "CPT":
-
-    antecedentes_tratamiento()
-
-    muestra = st.selectbox(
-        "Tipo muestra",
-        [
-            "Esputo",
-            "Tejido óseo",
-            "Tejido pleural",
-            "Deposición",
-            "Contenido gástrico",
-            "Lavado broncoalveolar",
-            "LCR",
-            "Líquido pleural",
-            "Tejido ganglionar",
-            "Aspirado bronquial",
-            "Orina",
-            "Otros líquidos/tejidos/sangre"
-        ]
-    )
+    with col2:
+        edad = st.number_input("Edad (años)", min_value=0, max_value=120, value=0, step=1, key="edad_cpt")
 
     if muestra == "Esputo":
+        st.radio("Cantidad de muestras de esputo", ["1 muestra", "2 muestras"], key="n_esputo")
 
-        st.radio("Número muestras", ["1", "2"])
-        grupos = grupos_vulnerables()
-        sintomas()
+    antecedentes = st.radio("Antecedentes de tratamiento (1 sola)", antecedentes_opts, key="ant_cpt")
 
-        examenes.append("PCR MTB/RIF")
+    st.subheader("Grupo vulnerable (puede seleccionar más de 1)")
+    grupo_vulnerable = st.multiselect("Seleccione", grupo_vulnerable_opts, default=[], key="gv_cpt")
 
-        if (
-            "PV VIH" in grupos or
-            "Contacto TBC sensible" in grupos or
-            "Contacto TBC resistente" in grupos or
-            menor_15
-        ):
-            examenes.append("Cultivo Koch")
+    # Campos "ESPECIFICAR" en grupo vulnerable
+    if "Inmunosupresión (ESPECIFICAR)" in grupo_vulnerable:
+        st.text_input("Especificar inmunosupresión", key="esp_inmuno")
+    if "Otras poblaciones cerradas (ESPECIFICAR)" in grupo_vulnerable:
+        st.text_input("Especificar otras poblaciones cerradas", key="esp_poblaciones")
+    if "Otros grupos (ESPECIFICAR)" in grupo_vulnerable:
+        st.text_input("Especificar otros grupos", key="esp_otros_grupos")
 
-    elif muestra in ["Tejido óseo", "Tejido pleural", "Deposición"]:
-        examenes.append("PCR MTB/RIF")
+    st.subheader("Síntomas (puede seleccionar más de 1)")
+    sintomas = st.multiselect("Seleccione", sintomas_opts, default=[], key="sint_cpt")
 
-    else:
+    # Exámenes
+    examenes.append("PCR Mycobacterium tuberculosis – MTB/RIF")
 
-        if muestra == "Orina":
-            st.radio("Número muestra orina", ["1ra", "2da", "3ra"])
+    # Regla de cultivo en CPT
+    gatilla_cultivo = False
+    if edad is not None and int(edad) < 15:
+        gatilla_cultivo = True
+        observaciones.append("Se agrega Cultivo (menor de 15 años).")
 
-        if muestra == "Otros líquidos/tejidos/sangre":
-            st.text_input("Especificar tipo muestra")
+    if any(x in grupo_vulnerable for x in ["PV VIH", "Contacto TB-sensible", "Contacto TB-resistente"]):
+        gatilla_cultivo = True
+        observaciones.append("Se agrega Cultivo (criterio en Grupo vulnerable).")
 
-        examenes.append("PCR MTB/RIF")
+    if gatilla_cultivo:
         examenes.append("Cultivo Koch")
 
-# -----------------------------
-# Persistencia síntomas
-# -----------------------------
-elif motivo == "Persistencia de síntomas":
+elif escenario.startswith("2)"):
+    muestra = st.selectbox("Tipo de muestra (1 sola)", muestras_amplias, key="muestra_persist")
+    if requiere_especificar(muestra):
+        st.text_input("Especificar muestra", key="esp_muestra_persist")
 
-    st.radio("Número muestras esputo", ["1", "2"])
-    antecedentes_tratamiento()
-    sintomas()
+    antecedentes = st.radio("Antecedentes de tratamiento (1 sola)", antecedentes_opts, key="ant_persist")
 
-    examenes = ["PCR MTB/RIF", "Cultivo Koch"]
+    # Exámenes por defecto
+    examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF", "Cultivo Koch"]
 
-# -----------------------------
-# Sospecha clínica sin CPT
-# -----------------------------
-elif motivo == "Sospecha clínica sin CPT":
+    # Excepción
+    if muestra in ["Tejido óseo", "Tejido pulmonar", "Deposición"]:
+        examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF"]
+        observaciones.append("Regla: en tejido óseo, tejido pulmonar o deposición se realiza solo PCR (sin cultivo).")
 
-    st.radio("Número muestras esputo", ["1", "2"])
-    antecedentes_tratamiento()
+elif escenario.startswith("3)"):
+    muestra = st.selectbox("Tipo de muestra (1 sola)", muestras_amplias, key="muestra_sospecha")
+    if requiere_especificar(muestra):
+        st.text_input("Especificar muestra", key="esp_muestra_sospecha")
 
-    examenes = ["PCR MTB/RIF", "Cultivo Koch"]
+    antecedentes = st.radio("Antecedentes de tratamiento (1 sola)", antecedentes_opts, key="ant_sospecha")
 
-# -----------------------------
-# Sospecha MNT
-# -----------------------------
-elif motivo == "Sospecha MNT":
+    examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF", "Cultivo Koch"]
 
-    muestra = st.selectbox("Tipo muestra", ["Orina"])
+    if muestra in ["Tejido óseo", "Tejido pulmonar", "Deposición"]:
+        examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF"]
+        observaciones.append("Regla: en tejido óseo, tejido pulmonar o deposición se realiza solo PCR (sin cultivo).")
 
-    antecedentes_tratamiento()
-    grupos_vulnerables()
-    sintomas()
+elif escenario.startswith("4)"):
+    muestra = st.selectbox("Tipo de muestra (1 sola)", muestras_amplias, key="muestra_mnt")
+    if requiere_especificar(muestra):
+        st.text_input("Especificar muestra", key="esp_muestra_mnt")
 
-    examenes = ["PCR", "Cultivo"]
+    antecedentes = st.radio("Antecedentes de tratamiento (1 sola)", antecedentes_opts, key="ant_mnt")
 
-# -----------------------------
-# Control tratamiento
-# -----------------------------
-elif motivo == "Control de tratamiento":
+    st.subheader("Grupo vulnerable (puede seleccionar más de 1)")
+    grupo_vulnerable = st.multiselect("Seleccione", grupo_vulnerable_opts, default=[], key="gv_mnt")
 
-    muestra = st.selectbox("Tipo muestra", ["Esputo", "Orina"])
+    if "Inmunosupresión (ESPECIFICAR)" in grupo_vulnerable:
+        st.text_input("Especificar inmunosupresión", key="esp_inmuno_mnt")
+    if "Otras poblaciones cerradas (ESPECIFICAR)" in grupo_vulnerable:
+        st.text_input("Especificar otras poblaciones cerradas", key="esp_poblaciones_mnt")
+    if "Otros grupos (ESPECIFICAR)" in grupo_vulnerable:
+        st.text_input("Especificar otros grupos", key="esp_otros_grupos_mnt")
+
+    st.subheader("Síntomas (puede seleccionar más de 1)")
+    sintomas = st.multiselect("Seleccione", sintomas_opts, default=[], key="sint_mnt")
+
+    examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF", "Cultivo Koch"]
+
+    if muestra in ["Tejido óseo", "Tejido pulmonar", "Deposición"]:
+        examenes = ["PCR Mycobacterium tuberculosis – MTB/RIF"]
+        observaciones.append("Regla: en tejido óseo, tejido pulmonar o deposición se realiza solo PCR (sin cultivo).")
+
+elif escenario.startswith("5)"):
+    muestra = st.radio("Tipo de muestra (1 sola)", ["Esputo", "Orina"], key="muestra_ctrl")
+
+    mes_opts = [str(i) for i in range(1, 11)] + ["6 meses post alta"]
+    mes = st.selectbox("Mes de tratamiento", mes_opts, key="mes_ctrl")
 
     if muestra == "Esputo":
-        st.selectbox("Mes tratamiento", list(range(1, 11)))
-        examenes = ["Baciloscopía", "Cultivo"]
-
+        st.info("Esputo: 1 muestra.")
+        examenes = ["Baciloscopía", "Cultivo Koch"]
     else:
-        examenes = ["Cultivo"]
+        st.info("Orina: 1 muestra. Solo aplica en mes 4.")
+        if mes != "4":
+            st.warning("Para ORINA, la solicitud corresponde solo al mes 4. Ajuste el mes o cambie a esputo.")
+        examenes = ["Cultivo Koch"]
 
-# -----------------------------
-# RESULTADO FINAL
-# -----------------------------
-st.subheader("Exámenes a realizar")
+# ----------------------------
+# Resumen
+# ----------------------------
+st.divider()
+st.subheader("Resumen del caso")
 
-if examenes:
-    for ex in set(examenes):
-        st.write("✔", ex)
+st.write(f"Escenario: {escenario}")
+if muestra is not None:
+    st.write(f"Muestra: {muestra}")
+
+if escenario.startswith("1)") and "n_esputo" in st.session_state:
+    st.write(f"Cantidad de esputo: {st.session_state.get('n_esputo')}")
+
+if escenario.startswith("5)"):
+    st.write(f"Mes de tratamiento: {st.session_state.get('mes_ctrl')}")
+
+if antecedentes is not None:
+    st.write(f"Antecedentes de tratamiento: {antecedentes}")
+
+if escenario.startswith("1)") or escenario.startswith("4)"):
+    st.write(f"Grupo vulnerable: {', '.join(grupo_vulnerable) if grupo_vulnerable else 'Ninguno'}")
+    st.write(f"Síntomas: {', '.join(sintomas) if sintomas else 'Ninguno'}")
+
+st.markdown("**Exámenes a realizar:**")
+for e in examenes:
+    st.write(f"- {e}")
+
+if observaciones:
+    st.markdown("**Observaciones / reglas aplicadas:**")
+    for o in observaciones:
+        st.write(f"- {o}")
+
+st.divider()
+
+# Botón de "refresh" (nuevo caso)
+if st.button("Nuevo caso (borrar y simular otro)", type="primary"):
+    reset_app()
+
+st.markdown("---")
+st.write("Elaborado por TM Camilo Muñoz, Febrero 2026")
