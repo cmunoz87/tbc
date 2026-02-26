@@ -25,7 +25,22 @@ if "examenes_out" not in st.session_state:
 # ----------------------------
 # UI
 # ----------------------------
-st.title("Simulación de Solicitud de Investigación Bacteriológica de Tuberculosis")
+# Encabezado con logos + título centrado
+col1, col2, col3 = st.columns([1, 4, 1])
+
+with col1:
+    st.image("logo_gidil.png", width=100)
+
+with col2:
+    st.markdown(
+        "<h3 style='text-align:center; margin-bottom:0;'>"
+        "Simulación de Solicitud de Investigación Bacteriológica de Tuberculosis"
+        "</h3>",
+        unsafe_allow_html=True
+    )
+
+with col3:
+    st.image("logo_ssas.png", width=100)
 
 st.subheader("Datos del paciente")
 edad = st.number_input(
@@ -46,7 +61,11 @@ escenarios = [
     "Sospecha de Micobacteria No Tuberculosa (MNT)",
     "Control de tratamiento",
 ]
-escenario = select_with_placeholder("Escenario clínico (obligatorio)", escenarios, key="escenario")
+escenario = select_with_placeholder(
+    "Escenario clínico (obligatorio)",
+    escenarios,
+    key="escenario"
+)
 
 st.divider()
 
